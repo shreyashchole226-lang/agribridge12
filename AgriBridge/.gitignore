@@ -1,0 +1,79 @@
+# ─── Node / React ─────────────────────────────────────────────────────────────
+node_modules/
+frontend/node_modules/
+frontend/.cache/
+frontend/build/
+frontend/.env.local
+frontend/.env.development.local
+frontend/.env.test.local
+frontend/.env.production.local
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# ─── Python / FastAPI / venv ──────────────────────────────────────────────────
+backend/venv/
+backend/__pycache__/
+backend/*.pyc
+backend/*.pyo
+backend/*.pyd
+backend/.Python
+backend/env/
+backend/.venv/
+__pycache__/
+*.py[cod]
+*.so
+*.egg
+*.egg-info/
+dist/
+build/
+.eggs/
+
+# ─── Database ─────────────────────────────────────────────────────────────────
+*.db
+*.sqlite
+*.sqlite3
+backend/agribridge.db
+
+# ─── Environment / Secrets ────────────────────────────────────────────────────
+.env
+backend/.env
+*.env
+.env.*
+!.env.example
+
+# ─── OS / Editor ──────────────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+desktop.ini
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# ─── Logs ─────────────────────────────────────────────────────────────────────
+logs/
+*.log
+pids/
+*.pid
+*.seed
+*.pid.lock
+
+# ─── Coverage / Testing ───────────────────────────────────────────────────────
+coverage/
+.nyc_output/
+.pytest_cache/
+htmlcov/
+.tox/
+.coverage
+.coverage.*
+
+# ─── Misc ─────────────────────────────────────────────────────────────────────
+.cache/
+.parcel-cache/
+.next/
+.nuxt/
+.output/
+.vercel/
+.netlify/
