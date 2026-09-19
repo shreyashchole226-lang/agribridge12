@@ -331,6 +331,7 @@ const CATEGORY_EMOJI_CM = { All:"🌿", Vegetable:"🥦", Fruit:"🍎", Grain:"�
 
 /* ── Product Card ────────────────────────────────────────────────────── */
 function ProductCard({ product, onAddToCart, cartQty, wishlisted, onWishlist, currentUser }) {
+  const { t } = useLanguage();
   const [showReviews, setShowReviews] = useState(false);
   const [reviews, setReviews]         = useState([]);
   const [myRating, setMyRating]       = useState(0);

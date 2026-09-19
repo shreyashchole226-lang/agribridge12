@@ -330,9 +330,29 @@ async def seed_database():
             "Drumstick Leaves":     "https://images.unsplash.com/photo-1576045057995-568f588f82fb?w=400",
             "Lemon (Nimbu)":        "https://images.unsplash.com/photo-1582087439450-6fc660faab1a?w=400",
         }
+        # ── Old default placeholder URLs that should be replaced ──────────────
+        OLD_PLACEHOLDERS = {
+            "https://images.unsplash.com/photo-1508747703725-719777637510?w=400",
+            "https://images.unsplash.com/photo-1600003263720-95b45a34d654?w=400",
+            "https://images.unsplash.com/photo-1583119022894-919a68a3d0e3?w=400",
+            "https://images.unsplash.com/photo-1615485290382-441e4d049cb5?w=400",
+            "https://images.unsplash.com/photo-1628556270448-4d4e4148e1b1?w=400",
+            "https://images.unsplash.com/photo-1574323347407-f5e1ad6d020b?w=400",
+            "https://images.unsplash.com/photo-1515543237350-b3eea1ec8082?w=400",
+            "https://images.unsplash.com/photo-1576045057995-568f588f82fb?w=400",
+            "https://images.unsplash.com/photo-1571771894821-ce9b6c11b08e?w=400",
+            "https://images.unsplash.com/photo-1517282009859-f000ec3b26fe?w=400",
+            "",  # also fix blank URLs
+        }
         for name, url in IMAGE_FIXES.items():
-            db.query(Product).filter(Product.name == name).update({"image_url": url})
+            # Only overwrite if the product still has one of the old default images
+            # Never touch custom images a farmer has manually set
+            db.query(Product).filter(
+                Product.name == name,
+                Product.image_url.in_(OLD_PLACEHOLDERS)
+            ).update({"image_url": url}, synchronize_session=False)
         db.commit()
+
 
         # Seed reviews
         if db.query(Review).count() == 0:

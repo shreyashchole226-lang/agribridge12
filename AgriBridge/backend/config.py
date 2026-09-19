@@ -28,8 +28,11 @@ class Settings:
                 keys.append(v)
         return keys
 
-    GROQ_MODEL: str = "llama-3.3-70b-versatile"
-    GROQ_VISION_MODEL: str = "meta-llama/llama-4-scout-17b-16e-instruct"
+    GROQ_MODEL: str = "groq/compound"          # Groq compound text model
+    GROQ_VISION_MODEL: str = "groq/compound-mini"  # Groq text fallback (vision via OpenRouter)
+
+    # ─── Vision model routed through OpenRouter (supports multimodal images) ──
+    OPENROUTER_VISION_MODEL: str = "meta-llama/llama-4-scout"  # OpenRouter vision model
 
     # ─── Google Gemini (Optional: Crop Doctor vision analysis) ──────────────────
     # Free key from: https://aistudio.google.com/apikey
@@ -65,7 +68,7 @@ class Settings:
         return keys
 
     OPENROUTER_BASE_URL: str = "https://openrouter.ai/api/v1"
-    OPENROUTER_MODEL: str = "meta-llama/llama-3.3-70b-instruct"
+    OPENROUTER_MODEL: str = "meta-llama/llama-3.1-70b-instruct"  # Updated: stable OpenRouter fallback
 
     # ─── Weather (wttr.in) ────────────────────────────────────────────────────
     DEFAULT_CITY: str = "Pune"

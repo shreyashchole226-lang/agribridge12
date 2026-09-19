@@ -402,6 +402,7 @@ function SimulatorForm({ onSubmit, loading, t }) {
 
 // ─── Results Panel ────────────────────────────────────────────────────────────
 function SimulationResults({ result }) {
+  const { t } = useLanguage();
   const { farm_summary, crops } = result;
 
   return (

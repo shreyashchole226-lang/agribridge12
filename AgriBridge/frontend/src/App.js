@@ -44,7 +44,9 @@ function FloatingAIChatbot({ isFarmer }) {
     setMessages(prev => [...prev, { role: "user", content: userMsg }]);
     setLoading(true);
     try {
-      const r = await chatWithBot(userMsg, messages.slice(-6));
+      // Trim history to last 4 msgs and cap each message at 300 chars to avoid 413
+      const trimmedHistory = messages.slice(-4).map(m => ({ ...m, content: m.content.slice(0, 300) }));
+      const r = await chatWithBot(userMsg, trimmedHistory);
       setMessages(prev => [...prev, { role: "assistant", content: r.data.response }]);
     } catch {
       setMessages(prev => [...prev, { role: "assistant", content: "⚠️ Sorry, AI is temporarily unavailable. Please try again." }]);
@@ -70,6 +72,7 @@ function FloatingAIChatbot({ isFarmer }) {
                 <span style={{ color: "#4b5563", fontSize: 11 }}>Online 24/7</span>
               </div>
             </div>
+            <button onClick={() => setMessages([{ role: "assistant", content: isFarmer ? "🌾 Hi! I'm your AgriBridge AI assistant. Ask me anything about farming, prices, schemes, or your crops!" : "🛒 Hi! I'm AgriBridge AI. Ask me about fresh produce, seasonal prices, nutrition tips, or finding the best deals!" }])} title="Clear chat" style={{ background: "none", border: "none", color: "#6b7280", cursor: "pointer", fontSize: 13, lineHeight: 1, padding: "4px 8px", borderRadius: 6 }}>🗑️</button>
             <button onClick={() => setOpen(false)} style={{ background: "none", border: "none", color: "#6b7280", cursor: "pointer", fontSize: 18, lineHeight: 1, padding: 4 }}>✕</button>
           </div>
 
@@ -171,7 +174,7 @@ const CONSUMER_NAV = [
   { path: "/chat",        icon: "💬", labelKey: "messages" },
   { path: "/schemes",     icon: "🏛️", labelKey: "govtSchemes" },
   { path: "/map",         icon: "🗺️", labelKey: "mapRoutes" },
-  { path: "/weather",     icon: "🌦️", labelKey: "weather" },
+  { path: "/weather",     icon: "🚛", label: "Transport Cost" },
 ];
 
 const DELIVERY_NAV = [
@@ -179,7 +182,6 @@ const DELIVERY_NAV = [
   { path: "/delivery-dashboard",icon: "🚚", labelKey: "deliveryDashboard", badge: "New" },
   { path: "/chat",              icon: "💬", labelKey: "messages" },
   { path: "/map",               icon: "🗺️", labelKey: "mapRoutes" },
-  { path: "/weather",           icon: "🌦️", labelKey: "weather" },
 ];
 
 /* ─── Language Toggle Pills ─────────────────────────────────────────────────── */
@@ -304,10 +306,10 @@ function Sidebar({ currentUser, onLogout, collapsed, setCollapsed, mobileOpen, s
               <Link key={link.path} to={link.path} onClick={() => setMobileOpen(false)}
                 className={`sidebar-link ${isActive ? "sidebar-link-active" : ""}`}
                 style={isActive ? { background: `${accentLight}0.12)`, color: accent, borderLeft: `3px solid ${accent}` } : {}}
-                title={collapsed ? t(link.labelKey) : ""}
+                title={collapsed ? (link.label || t(link.labelKey)) : ""}
               >
                 <span className="sidebar-link-icon">{link.icon}</span>
-                {!collapsed && <span className="sidebar-link-label">{t(link.labelKey)}</span>}
+                {!collapsed && <span className="sidebar-link-label">{link.label || t(link.labelKey)}</span>}
                 {isActive && !collapsed && <span className="sidebar-link-dot" style={{ background: accent }} />}
                 {!collapsed && badgeCount > 0 && (
                   <span style={{ fontSize: "9px", fontWeight: 800, padding: "1px 5px", borderRadius: "99px", background: "#ef4444", color: "#fff", marginLeft: "auto" }}>

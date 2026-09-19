@@ -1,0 +1,2 @@
+﻿id,farmer_id,name,category,description,retail_price,bulk_price,min_bulk_qty,unit,stock_qty,image_url,is_active,created_at
+60,1,Paneer,Dairy,"Soft fresh paneer made daily, perfect for curries and grills",80,75,5,kg,10,https://images.unsplash.com/photo-1631452180519-c014fe946bc7?w=400,1,2026-06-21 06:15:43.381485

@@ -505,6 +505,70 @@ async def call_groq_vision(
         return data["choices"][0]["message"]["content"]
 
 
+# ─── OpenRouter Vision Caller ─────────────────────────────────────────────────
+
+async def call_openrouter_vision(
+    prompt: str,
+    image_base64: str,
+    mime_type: str = "image/jpeg",
+    max_tokens: int = 2500,
+) -> str:
+    """
+    Send an image + text prompt to OpenRouter (meta-llama/llama-4-scout).
+    Falls back to text-only Groq if no OpenRouter keys are available or all fail.
+    """
+    if not openrouter_key_manager.has_keys():
+        # No OpenRouter keys — degrade to text-only diagnosis
+        return await call_groq(prompt, max_tokens=max_tokens)
+
+    url = f"{settings.OPENROUTER_BASE_URL}/chat/completions"
+    payload = {
+        "model": settings.OPENROUTER_VISION_MODEL,
+        "messages": [{
+            "role": "user",
+            "content": [
+                {"type": "text", "text": prompt},
+                {
+                    "type": "image_url",
+                    "image_url": {"url": f"data:{mime_type};base64,{image_base64}"}
+                }
+            ]
+        }],
+        "temperature": 0.5,
+        "max_tokens": max_tokens,
+    }
+
+    tried: set = set()
+    for _ in range(len(settings.OPENROUTER_API_KEYS)):
+        key = openrouter_key_manager.get_key()
+        if key in tried:
+            break
+        tried.add(key)
+        headers = {
+            "Authorization": f"Bearer {key}",
+            "Content-Type": "application/json",
+            "HTTP-Referer": "https://agribridge.app",
+            "X-Title": "AgriBridge",
+        }
+        try:
+            async with httpx.AsyncClient(timeout=60.0) as client:
+                resp = await client.post(url, json=payload, headers=headers)
+            if resp.status_code == 200:
+                return resp.json()["choices"][0]["message"]["content"]
+            if resp.status_code in (429, 401, 402, 403):
+                openrouter_key_manager.mark_failed(key, 60.0)
+                continue
+            # Other error — return the message directly
+            return f"\u26a0️ OpenRouter Vision error ({resp.status_code}): {resp.text[:200]}"
+        except Exception as e:
+            print(f"[OpenRouter Vision] exception: {e}")
+            continue
+
+    # All keys exhausted — fall back to text-only Groq
+    print("[OpenRouter Vision] All keys exhausted — falling back to text-only Groq")
+    return await call_groq(prompt, max_tokens=max_tokens)
+
+
 # ─── Fertilizer Advisor (Primary: Groq ⚡ + OpenRouter 🌐 race) ───────────────
 
 async def get_fertilizer_advice(crop: str, soil_type: str, ph: float, nitrogen: float, phosphorus: float, potassium: float, area_acres: float) -> str:
@@ -590,7 +654,7 @@ Timeline if treatment starts immediately. Will the crop be saved? Expected yield
 Any government helpline, KVK contact, or regional advisory relevant to this disease in India.
 
 If the image shows a healthy plant, say so clearly and provide a detailed maintenance and care guide."""
-    return await call_groq_vision(prompt, image_base64, max_tokens=2500)
+    return await call_openrouter_vision(prompt, image_base64, max_tokens=2500)
 
 
 # ─── Soil Health Analyzer ─────────────────────────────────────────────────────
@@ -685,7 +749,7 @@ Rules:
 - suitable_crops should be realistic for Indian farming"""
 
     try:
-        raw = await call_groq_vision(prompt, image_base64)
+        raw = await call_openrouter_vision(prompt, image_base64)
         # Strip markdown fences if present
         content = raw.strip()
         if content.startswith("```"):
@@ -1155,11 +1219,13 @@ Keep responses concise but complete. Add emojis for readability."""
             return cached
 
     # Build messages list for multi-turn format
+    # Cap each history message at 400 chars and user_message at 800 chars to prevent 413
     messages = [{"role": "system", "content": system_context}]
-    for msg in conversation_history[-6:]:  # Last 6 messages for context
+    for msg in conversation_history[-4:]:  # Last 4 messages for context
         role = msg.get("role", "user")
-        messages.append({"role": role, "content": msg.get("content", "")})
-    messages.append({"role": "user", "content": user_message})
+        content = msg.get("content", "")[:400]  # Truncate long messages
+        messages.append({"role": role, "content": content})
+    messages.append({"role": "user", "content": user_message[:800]})
 
     # Use key manager with faster timeout + parallel race with DeepSeek
     url = f"{GROQ_BASE}/chat/completions"
@@ -1188,6 +1254,22 @@ Keep responses concise but complete. Add emojis for readability."""
             if not conversation_history:
                 ai_cache.set(user_message, result, "chatbot")
             return result
+
+        if resp.status_code == 413:
+            # Payload too large — retry with a much shorter history (last 2 messages only)
+            print("[Chatbot] 413 payload too large — retrying with trimmed history")
+            short_messages = [{"role": "system", "content": system_context}]
+            for msg in conversation_history[-2:]:
+                role = msg.get("role", "user")
+                short_messages.append({"role": role, "content": msg.get("content", "")})
+            short_messages.append({"role": "user", "content": user_message})
+            payload["messages"] = short_messages
+            async with httpx.AsyncClient(timeout=15.0) as client:
+                resp = await client.post(url, json=payload, headers=headers)
+            if resp.status_code == 200:
+                return resp.json()["choices"][0]["message"]["content"]
+            # Still failing — fall through to generic error
+            return f"⚠️ Message too long. Please start a new conversation."
 
         if resp.status_code != 200:
             return f"⚠️ Groq API error ({resp.status_code}). Please try again."

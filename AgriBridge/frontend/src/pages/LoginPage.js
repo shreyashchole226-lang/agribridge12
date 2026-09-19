@@ -239,7 +239,7 @@ function RoleCard({ role, selected, onSelect, t }) {
         ) : (
           <>
             <span>🛒 Marketplace</span>
-            <span>🌦️ Weather</span>
+            <span>🚛 Transport Cost</span>
             <span>🎓 Tutorials</span>
             <span>💬 Direct Chat</span>
           </>
